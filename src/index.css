@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --color-graphite-950: #0F1215;
+  --color-graphite-900: #14181C;
+  --color-graphite-800: #1D2329;
+  --color-graphite-700: #2A323A;
+  --color-graphite-600: #3D4750;
+  --color-steel-500: #4C5B6B;
+  --color-steel-300: #8B99A6;
+  --color-mist-100: #EDEFF1;
+  --color-mist-200: #C9CFD4;
+  --color-amber-500: #F2A93B;
+  --color-amber-600: #D98F1F;
+  --color-teal-500: #35B0A7;
+  --color-teal-400: #4FC9BF;
+  --color-danger-500: #E15252;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-graphite-900);
+  color: var(--color-mist-100);
+  font-family: var(--font-body);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Nameplate signature element: riveted panel look */
+.plate {
+  position: relative;
+  background: linear-gradient(180deg, var(--color-graphite-800) 0%, var(--color-graphite-900) 100%);
+  border: 1px solid var(--color-graphite-700);
+  border-radius: 6px;
+}
+
+.plate::before,
+.plate::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-graphite-600);
+  box-shadow: inset 0 1px 1px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+  top: 10px;
+}
+
+.plate::before { left: 10px; }
+.plate::after { right: 10px; }
+
+.plate-rivets-bottom::after,
+.plate-rivets-bottom::before {
+  top: auto;
+  bottom: 10px;
+}
+
+.hazard-stripe {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--color-amber-500),
+    var(--color-amber-500) 10px,
+    var(--color-graphite-900) 10px,
+    var(--color-graphite-900) 20px
+  );
+}
+
+::selection {
+  background: var(--color-amber-500);
+  color: var(--color-graphite-950);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-amber-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
