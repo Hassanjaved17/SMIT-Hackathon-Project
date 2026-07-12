@@ -171,6 +171,8 @@ export async function getIssue(id: string): Promise<Issue | null> {
   return loadDemo().issues.find((i) => i.id === id) || null;
 }
 
+
+
 export async function createIssue(input: Omit<Issue, 'id' | 'created_at' | 'issue_number' | 'status'>): Promise<Issue> {
   const existing = await listIssues();
   const issue_number = generateIssueNumber(existing);

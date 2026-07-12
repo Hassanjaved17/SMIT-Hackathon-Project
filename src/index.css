@@ -97,3 +97,20 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Print styles — used by the Issue Receipt's "Print / Save as PDF" button */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #issue-receipt, #issue-receipt * {
+    visibility: visible;
+  }
+  #issue-receipt {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-shadow: none !important;
+  }
+}

@@ -79,17 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(name: string, email: string, password: string, role: Role) {
-  if (isSupabaseConfigured) {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: name, role } },
-    })
-    if (error) throw error
-    // profile row is now created server-side by the handle_new_user trigger —
-    // this avoids the RLS-timing gap where no session exists yet if email
-    // confirmation is enabled.
-  }   else {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name, role } },
+      });
+      if (error) throw error;
+      // profile row is now created server-side by the handle_new_user trigger
+      // (see sql-patches/1-profile-auto-create-trigger.sql) — this avoids the
+      // RLS-timing gap where no session exists yet if email confirmation is on.
+    } else {
       const users = loadDemoUsers();
       if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) throw new Error('Account already exists');
       const newUser: DemoUser = { id: crypto.randomUUID(), name, email, password, role };
