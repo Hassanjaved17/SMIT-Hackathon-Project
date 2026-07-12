@@ -171,7 +171,22 @@ export async function getIssue(id: string): Promise<Issue | null> {
   return loadDemo().issues.find((i) => i.id === id) || null;
 }
 
-
+export async function getIssueByNumber(issueNumber: string): Promise<Issue | null> {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('issues')
+      .select('*')
+      .eq('issue_number', issueNumber.trim().toUpperCase())
+      .maybeSingle();
+    if (error) throw error;
+    return data as Issue | null;
+  }
+  return (
+    loadDemo().issues.find(
+      (i) => i.issue_number.toUpperCase() === issueNumber.trim().toUpperCase()
+    ) || null
+  );
+}
 
 export async function createIssue(input: Omit<Issue, 'id' | 'created_at' | 'issue_number' | 'status'>): Promise<Issue> {
   const existing = await listIssues();
