@@ -270,6 +270,19 @@ export async function listMaintenanceRecords(issueId: string): Promise<Maintenan
   return loadDemo().maintenance.filter((m) => m.issue_id === issueId);
 }
 
+/** All maintenance records across every issue — used by the analytics dashboard. */
+export async function listAllMaintenanceRecords(): Promise<MaintenanceRecord[]> {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase
+      .from('maintenance_records')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return data as MaintenanceRecord[];
+  }
+  return loadDemo().maintenance;
+}
+
 export async function createMaintenanceRecord(
   input: Omit<MaintenanceRecord, 'id' | 'created_at'>,
   issue: Issue,

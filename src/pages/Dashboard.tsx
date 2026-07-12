@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, QrCode } from 'lucide-react';
+import { Plus, Search, QrCode, Radio } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { listAssets, listIssues, resetDemoData } from '../lib/store';
 import { AssetStatusBadge, Button, IssueStatusBadge, Plate, PriorityBadge, inputClass } from '../components/ui';
 import NewAssetModal from '../components/NewAssetModal';
-import { isSupabaseConfigured } from '../lib/supabase';
+import AnalyticsPanel from '../components/AnalyticsPanel';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { Asset, Issue } from '../types';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<'assets' | 'issues'>('assets');
+  const [tab, setTab] = useState<'assets' | 'issues' | 'analytics'>('assets');
   const [assets, setAssets] = useState<Asset[]>([]);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +29,22 @@ export default function Dashboard() {
 
   useEffect(() => {
     refresh();
+
+    if (!isSupabaseConfigured) return;
+
+    // Live updates: whenever any user changes an issue or asset (status
+    // change, assignment, new report), everyone looking at the dashboard
+    // sees it immediately without needing to refresh.
+    const channel = supabase
+      .channel('dashboard-live-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, () => refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, () => refresh())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredAssets = useMemo(() => {
@@ -67,6 +84,11 @@ export default function Dashboard() {
             Signed in as <span className="text-mist-100">{user?.name}</span> ·{' '}
             <span className="font-mono uppercase text-amber-500">{user?.role}</span>
             {!isSupabaseConfigured && <span className="ml-2 text-steel-500">(demo storage)</span>}
+            {isSupabaseConfigured && (
+              <span className="ml-2 inline-flex items-center gap-1 text-teal-400">
+                <Radio size={12} className="animate-pulse" /> Live
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-3">
@@ -93,7 +115,7 @@ export default function Dashboard() {
 
       {/* Tabs */}
       <div className="mb-6 flex gap-2 border-b border-graphite-700">
-        {(['assets', 'issues'] as const).map((t) => (
+        {(['assets', 'issues', 'analytics'] as const).map((t) => (
           <button
             key={t}
             onClick={() => { setTab(t); setStatusFilter('All'); }}
@@ -101,12 +123,13 @@ export default function Dashboard() {
               tab === t ? 'border-amber-500 text-mist-100' : 'border-transparent text-steel-300 hover:text-mist-100'
             }`}
           >
-            {t === 'assets' ? `Assets (${assets.length})` : `Issues (${issues.length})`}
+            {t === 'assets' ? `Assets (${assets.length})` : t === 'issues' ? `Issues (${issues.length})` : 'Analytics'}
           </button>
         ))}
       </div>
 
       {/* Filters */}
+      {tab !== 'analytics' && (
       <div className="mb-6 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[220px]">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-steel-500" />
@@ -123,8 +146,11 @@ export default function Dashboard() {
           ))}
         </select>
       </div>
+      )}
 
-      {loading ? (
+      {tab === 'analytics' ? (
+        <AnalyticsPanel assets={assets} issues={issues} />
+      ) : loading ? (
         <p className="text-steel-300">Loading…</p>
       ) : tab === 'assets' ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
