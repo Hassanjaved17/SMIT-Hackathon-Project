@@ -1,8 +1,8 @@
 import { type ReactNode } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, Printer, ClipboardCheck } from 'lucide-react';
-import { Button, PriorityBadge, IssueStatusBadge } from '../../../new/src/components/ui';
-import type { Asset, Issue } from '../../../new/src/types';
+import { Button, PriorityBadge, IssueStatusBadge } from './ui';
+import type { Asset, Issue } from '../types';
 
 export default function IssueReceipt({ issue, asset }: { issue: Issue; asset: Asset }) {
   const trackingUrl = `${window.location.origin}/track?ref=${issue.issue_number}`;
