@@ -113,6 +113,28 @@ export async function createAsset(input: Omit<Asset, 'id' | 'created_at' | 'stat
   return asset;
 }
 
+export async function updateAsset(id: string, updates: Partial<Omit<Asset, 'id' | 'created_at'>>): Promise<void> {
+  if (isSupabaseConfigured) {
+    const { error } = await supabase.from('assets').update(updates).eq('id', id);
+    if (error) throw error;
+    const changedFields = Object.keys(updates).filter(k => updates[k as keyof typeof updates] !== undefined);
+    if (changedFields.length > 0) {
+      await addHistory(id, null, 'Administrator', `Asset details updated: ${changedFields.join(', ')}`);
+    }
+    return;
+  }
+  const db = loadDemo();
+  const asset = db.assets.find((a) => a.id === id);
+  if (asset) {
+    Object.assign(asset, updates);
+    saveDemo(db);
+    const changedFields = Object.keys(updates).filter(k => updates[k as keyof typeof updates] !== undefined);
+    if (changedFields.length > 0) {
+      await addHistory(id, null, 'Administrator', `Asset details updated: ${changedFields.join(', ')}`);
+    }
+  }
+}
+
 export async function updateAssetStatus(id: string, status: AssetStatus): Promise<void> {
   if (isSupabaseConfigured) {
     const { error } = await supabase.from('assets').update({ status }).eq('id', id);

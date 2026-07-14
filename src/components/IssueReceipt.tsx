@@ -1,12 +1,18 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Download, Printer, ClipboardCheck } from 'lucide-react';
 import { Button, PriorityBadge, IssueStatusBadge } from './ui';
-import type { Asset, Issue } from '../types';
+import { listMaintenanceRecords } from '../lib/store';
+import type { Asset, Issue, MaintenanceRecord } from '../types';
 
 export default function IssueReceipt({ issue, asset }: { issue: Issue; asset: Asset }) {
   const trackingUrl = `${window.location.origin}/track?ref=${issue.issue_number}`;
   const reportedAt = new Date(issue.created_at);
+  const [maintenance, setMaintenance] = useState<MaintenanceRecord[]>([]);
+
+  useEffect(() => {
+    listMaintenanceRecords(issue.id).then(setMaintenance);
+  }, [issue.id]);
 
   function handlePrint() {
     window.print();
@@ -59,6 +65,23 @@ export default function IssueReceipt({ issue, asset }: { issue: Issue; asset: As
           <IssueStatusBadge status={issue.status} />
           <span className="text-xs text-steel-300 print:text-black">Category: {issue.category}</span>
         </div>
+
+        {maintenance.length > 0 && (
+          <div className="mb-4 space-y-2 border-t border-dashed border-graphite-600 pt-4 print:border-black">
+            <p className="text-xs uppercase tracking-wide text-steel-300 print:text-black">
+              Maintenance record
+            </p>
+            {maintenance.map((m) => (
+              <div key={m.id} className="space-y-1 text-xs">
+                <p className="font-semibold text-mist-100 print:text-black">{m.technician}</p>
+                <p className="text-steel-300 print:text-black">{m.notes}</p>
+                {m.parts_used && <p className="text-steel-400 print:text-black">Parts: {m.parts_used}</p>}
+                {m.cost > 0 && <p className="text-steel-400 print:text-black">Cost: {m.cost}</p>}
+                <p className="text-steel-500 print:text-black">{new Date(m.created_at).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         <p className="border-t border-dashed border-graphite-600 pt-4 text-center text-[10px] text-steel-400 print:border-black print:text-black">
           Scan the QR code or visit /track and enter {issue.issue_number} to check status.

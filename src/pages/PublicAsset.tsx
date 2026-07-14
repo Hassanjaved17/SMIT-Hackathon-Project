@@ -56,10 +56,18 @@ export default function PublicAsset() {
 
         {history.length > 0 && (
           <div className="mt-4 border-t border-graphite-700 pt-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-steel-300">Recent activity</p>
-            <ul className="space-y-1.5 text-xs text-steel-300">
-              {history.map((h) => <li key={h.id}>· {h.action}</li>)}
-            </ul>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-steel-300">Recent activity (5 most recent)</p>
+            <div className="space-y-2.5">
+              {history.map((h) => (
+                <div key={h.id} className="flex gap-2 text-xs">
+                  <span className="h-5 w-4 flex-shrink-0 text-amber-500">→</span>
+                  <div className="flex-1">
+                    <p className="text-steel-200">{h.action}</p>
+                    <p className="mt-0.5 text-steel-500">{new Date(h.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </Plate>
