@@ -31,6 +31,7 @@ function loadDemoUsers(): DemoUser[] {
   if (raw) return JSON.parse(raw);
   const seeded: DemoUser[] = [
     { id: 'admin-1', name: 'Ayesha (Admin)', email: 'admin@maintainiq.app', password: 'admin123', role: 'admin' },
+    { id: 'admin-2', name: 'Hassan (Admin)', email: 'hassandeveloper341@gmail.com', password: 'admin123', role: 'admin' },
     { id: 'tech-1', name: 'Bilal (Technician)', email: 'tech@maintainiq.app', password: 'tech123', role: 'technician' },
   ];
   localStorage.setItem(DEMO_USERS_KEY, JSON.stringify(seeded));

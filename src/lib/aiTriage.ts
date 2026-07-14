@@ -77,6 +77,40 @@ function summarizeTitle(complaint: string): string {
   return toTitleCase(short.replace(/^(the|my|our)\s+/i, ''));
 }
 
+export async function generatePreventiveRecommendation(
+  assetCategory: string,
+  lastServiceDate: string | null,
+  recentIssueCount: number,
+  issueCategories: string[]
+): Promise<string> {
+  // Deterministic preventive maintenance rules based on asset history
+  const today = new Date();
+  const lastService = lastServiceDate ? new Date(lastServiceDate) : null;
+  const daysSinceService = lastService ? Math.floor((today.getTime() - lastService.getTime()) / (1000 * 60 * 60 * 24)) : 999;
+
+  let recommendation = '';
+
+  // General recommendations by category
+  if (assetCategory === 'HVAC') {
+    if (daysSinceService > 180) recommendation += 'Schedule quarterly maintenance. ';
+    if (issueCategories.includes('Leakage')) recommendation += 'Check condensate drain lines. ';
+    if (issueCategories.includes('Mechanical')) recommendation += 'Inspect filters and belts. ';
+  } else if (assetCategory === 'Electronics') {
+    if (daysSinceService > 365) recommendation += 'Perform annual hardware check. ';
+    if (issueCategories.includes('Electrical')) recommendation += 'Check power connections and surge protection. ';
+  } else if (assetCategory === 'Mechanical') {
+    if (daysSinceService > 90) recommendation += 'Schedule preventive lubrication. ';
+    if (issueCategories.includes('Mechanical')) recommendation += 'Inspect bearings and fasteners. ';
+  }
+
+  // Recurring issue detection
+  if (recentIssueCount >= 3) {
+    recommendation += 'Multiple issues detected recently—consider a full inspection or replacement evaluation. ';
+  }
+
+  return recommendation.trim() || 'Continue regular operational monitoring.';
+}
+
 export async function runTriage(
   complaint: string,
   assetContext: { name: string; category: string; recentIssueCount: number },

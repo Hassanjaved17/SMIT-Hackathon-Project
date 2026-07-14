@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, Edit } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import {
   getAsset, listIssues, listHistory,
@@ -9,6 +9,8 @@ import {
 } from '../lib/store';
 import { AssetStatusBadge, Button, Field, IssueStatusBadge, Plate, PriorityBadge, inputClass } from '../components/ui';
 import QRTag from '../components/QRTag';
+import EditAssetModal from '../components/EditAssetModal';
+import { generatePreventiveRecommendation } from '../lib/aiTriage';
 import type { Asset, Issue, HistoryEntry, IssueStatus, MaintenanceRecord } from '../types';
 
 const NEXT_STATUS: Record<IssueStatus, IssueStatus[]> = {
@@ -30,6 +32,8 @@ export default function AssetDetail() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [recommendation, setRecommendation] = useState<string>('');
 
   async function refresh() {
     if (!id) return;
@@ -38,6 +42,19 @@ export default function AssetDetail() {
     setAsset(a);
     setIssues(i);
     setHistory(h);
+    
+    // Generate preventive recommendation
+    if (a) {
+      const issueCategories = i.map(iss => iss.category);
+      const rec = await generatePreventiveRecommendation(
+        a.category,
+        a.last_service_date,
+        i.length,
+        issueCategories
+      );
+      setRecommendation(rec);
+    }
+    
     setLoading(false);
   }
 
@@ -63,6 +80,11 @@ export default function AssetDetail() {
           <p className="font-mono text-sm text-amber-500">{asset.code}</p>
           <p className="mt-1 text-sm text-steel-300">{asset.location} · {asset.category} · Condition: {asset.condition}</p>
         </div>
+        {user?.role === 'admin' && (
+          <Button variant="secondary" onClick={() => setShowEditModal(true)}>
+            <Edit size={16} /> Edit asset
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -101,6 +123,13 @@ export default function AssetDetail() {
           </Plate>
 
           <ServiceDatesCard asset={asset} onUpdated={refresh} />
+
+          {recommendation && (
+            <Plate className="border-l-4 border-l-amber-500">
+              <h2 className="mb-2 font-display text-base font-semibold text-amber-500">Preventive maintenance recommendation</h2>
+              <p className="text-sm text-steel-300">{recommendation}</p>
+            </Plate>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -122,6 +151,14 @@ export default function AssetDetail() {
           onSaved={refresh}
         />
       )}
+
+      {showEditModal && asset && (
+        <EditAssetModal
+          asset={asset}
+          onClose={() => setShowEditModal(false)}
+          onUpdated={refresh}
+        />
+      )}
     </div>
   );
 }
@@ -132,6 +169,9 @@ function IssueRow({
   const { user } = useAuth();
   const [techName, setTechName] = useState('');
   const nextOptions = NEXT_STATUS[issue.status] ?? [];
+  const isAdminUser = user?.role === 'admin';
+  const isTechnicianUser = user?.role === 'technician';
+  const isAssignedTechnician = isTechnicianUser && issue.assigned_technician === user?.name;
 
   async function handleAssign() {
     if (!techName.trim()) return;
@@ -171,7 +211,7 @@ function IssueRow({
 
       {canManage && !['Closed', 'Retired' as string].includes(issue.status) && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-graphite-700 pt-3">
-          {!issue.assigned_technician && (
+          {isAdminUser && !issue.assigned_technician && (
             <>
               <input
                 className={`${inputClass} w-auto max-w-[180px] !py-1.5`}
@@ -182,13 +222,16 @@ function IssueRow({
               <Button variant="secondary" onClick={handleAssign}>Assign</Button>
             </>
           )}
-          {nextOptions.map((s) => (
+          {(isAdminUser || isAssignedTechnician) && nextOptions.map((s) => (
             <Button key={s} variant={s === 'Resolved' ? 'primary' : 'secondary'} onClick={() => handleStatus(s)}>
               Mark {s}
             </Button>
           ))}
-          {issue.priority === 'Critical' && issue.status !== 'Resolved' && (
+          {isAdminUser && issue.priority === 'Critical' && issue.status !== 'Resolved' && (
             <Button variant="danger" onClick={handleOutOfService}>Mark asset Out of Service</Button>
+          )}
+          {isTechnicianUser && !isAssignedTechnician && issue.status === 'Assigned' && (
+            <p className="text-xs text-steel-400">This issue is assigned to {issue.assigned_technician || 'another technician'}</p>
           )}
         </div>
       )}
