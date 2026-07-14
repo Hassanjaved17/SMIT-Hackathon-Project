@@ -43,7 +43,7 @@ export default function Login() {
 
         {!isSupabaseConfigured && (
           <div className="mt-4 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
-            Demo mode (no Supabase configured). Try <span className="font-mono">admin@maintainiq.app / admin123</span> or{' '}
+            Demo mode (no Supabase configured). Try <span className="font-mono">hassandeveloper341@gmail.com / admin123</span>, <span className="font-mono">admin@maintainiq.app / admin123</span> or{' '}
             <span className="font-mono">tech@maintainiq.app / tech123</span>.
           </div>
         )}
