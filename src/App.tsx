@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import AssetDetail from './pages/AssetDetail';
 import PublicAsset from './pages/PublicAsset';
 import ReportIssue from './pages/ReportIssue';
+import TrackIssue from './pages/TrackIssue';
 import NotFound from './pages/NotFound';
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/report" element={<ReportIssue />} />
+              <Route path="/track" element={<TrackIssue />} />
               <Route path="/a/:code" element={<PublicAsset />} />
               <Route
                 path="/dashboard"

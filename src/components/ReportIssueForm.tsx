@@ -1,9 +1,11 @@
-import { useState, type FormEvent } from 'react';
-import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { Sparkles, Loader2, CheckCircle2, Paperclip, X } from 'lucide-react';
 import { Button, Field, PriorityBadge, inputClass } from './ui';
 import { createIssue, listIssues } from '../lib/store';
 import { runTriage } from '../lib/aiTriage';
-import type { Asset, AITriageResult, Priority } from '../types';
+import { uploadEvidence, EvidenceUploadError } from '../lib/evidence';
+import IssueReceipt from './IssueReceipt';
+import type { Asset, AITriageResult, Priority, Issue } from '../types';
 
 export default function ReportIssueForm({ asset, onSubmitted }: { asset: Asset; onSubmitted?: (issueNumber: string) => void }) {
   const [complaint, setComplaint] = useState('');
@@ -20,8 +22,25 @@ export default function ReportIssueForm({ asset, onSubmitted }: { asset: Asset; 
   const [priority, setPriority] = useState<Priority>('Medium');
 
   const [submitting, setSubmitting] = useState(false);
-  const [submittedNumber, setSubmittedNumber] = useState<string | null>(null);
+  const [submittedIssue, setSubmittedIssue] = useState<Issue | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [evidencePreview, setEvidencePreview] = useState<string | null>(null);
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
+
+  function handleEvidenceChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setEvidenceError(null);
+    setEvidenceFile(file);
+    setEvidencePreview(file ? URL.createObjectURL(file) : null);
+  }
+
+  function clearEvidence() {
+    setEvidenceFile(null);
+    setEvidencePreview(null);
+    setEvidenceError(null);
+  }
 
   async function handleRunAI() {
     setAiError(null);
@@ -54,6 +73,18 @@ export default function ReportIssueForm({ asset, onSubmitted }: { asset: Asset; 
     }
     setSubmitting(true);
     try {
+      let evidence_url: string | null = null;
+      if (evidenceFile) {
+        try {
+          evidence_url = await uploadEvidence(evidenceFile, 'issues');
+        } catch (err) {
+          const message = err instanceof EvidenceUploadError ? err.message : 'Evidence upload failed.';
+          setEvidenceError(message);
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const finalTitle = title.trim() || complaint.trim().slice(0, 60);
       const issue = await createIssue({
         asset_id: asset.id,
@@ -69,9 +100,9 @@ export default function ReportIssueForm({ asset, onSubmitted }: { asset: Asset; 
         ai_suggested_priority: !!aiResult && !aiTouched.priority,
         ai_possible_causes: aiResult?.possible_causes ?? [],
         ai_initial_checks: aiResult?.initial_checks ?? [],
-        evidence_url: null,
+        evidence_url,
       });
-      setSubmittedNumber(issue.issue_number);
+      setSubmittedIssue(issue);
       onSubmitted?.(issue.issue_number);
     } catch (err) {
       setError((err as Error).message);
@@ -80,14 +111,17 @@ export default function ReportIssueForm({ asset, onSubmitted }: { asset: Asset; 
     }
   }
 
-  if (submittedNumber) {
+  if (submittedIssue) {
     return (
-      <div className="rounded-md border border-teal-500/30 bg-teal-500/10 p-6 text-center">
-        <CheckCircle2 size={28} className="mx-auto mb-3 text-teal-400" />
-        <h3 className="font-display text-lg font-semibold text-mist-100">Issue reported</h3>
-        <p className="mt-1 text-sm text-steel-300">
-          Reference number <span className="font-mono text-amber-500">{submittedNumber}</span>. A technician will review it shortly.
-        </p>
+      <div>
+        <div className="mb-5 rounded-md border border-teal-500/30 bg-teal-500/10 p-4 text-center">
+          <CheckCircle2 size={24} className="mx-auto mb-2 text-teal-400" />
+          <h3 className="font-display text-base font-semibold text-mist-100">Issue reported</h3>
+          <p className="mt-1 text-xs text-steel-300">
+            Save or print your receipt below — keep it as evidence and to track this issue later.
+          </p>
+        </div>
+        <IssueReceipt issue={submittedIssue} asset={asset} />
       </div>
     );
   }
@@ -167,6 +201,22 @@ export default function ReportIssueForm({ asset, onSubmitted }: { asset: Asset; 
           <input className={inputClass} value={reporterContact} onChange={(e) => setReporterContact(e.target.value)} placeholder="Phone or email" />
         </Field>
       </div>
+
+      <Field label="Photo evidence (optional)">
+        {evidencePreview ? (
+          <div className="flex items-center gap-3">
+            <img src={evidencePreview} alt="Evidence preview" className="h-16 w-16 rounded-md border border-graphite-700 object-cover" />
+            <Button variant="secondary" type="button" onClick={clearEvidence}><X size={14} /> Remove</Button>
+          </div>
+        ) : (
+          <label className="flex w-fit cursor-pointer items-center gap-2 rounded-md border border-dashed border-graphite-600 px-3 py-2 text-sm text-steel-300 hover:border-amber-500/50">
+            <Paperclip size={14} />
+            Attach a photo
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleEvidenceChange} />
+          </label>
+        )}
+        {evidenceError && <p className="mt-1 text-xs text-danger-500">{evidenceError}</p>}
+      </Field>
 
       {error && <p className="text-sm text-danger-500">{error}</p>}
 
