@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /assets/
+Disallow: /login
+
+Sitemap: https://maintain-iq-mu.vercel.app/sitemap.xml
