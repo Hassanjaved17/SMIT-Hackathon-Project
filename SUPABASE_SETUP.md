@@ -4,7 +4,7 @@ Your Supabase project credentials are configured, but you need to set up users a
 
 ## Current Status
 
-- ✅ Supabase project created: `vkyqeukzdltxzzybpusz.supabase.co`
+
 - ✅ Environment variables added to your `.env.local`
 - ✅ Database schema created (tables: assets, issues, maintenance_records, history, profiles)
 - ✅ Seed assets inserted (5 demo assets)

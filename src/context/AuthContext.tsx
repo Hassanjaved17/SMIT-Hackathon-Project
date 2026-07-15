@@ -61,9 +61,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function hydrateFromSupabase(id: string, email: string) {
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
-    setUser({ id, email, name: profile?.full_name ?? email, role: (profile?.role as Role) ?? 'technician' });
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !profile) {
+    // No profile row = broken/incomplete account. Don't silently
+    // grant technician access — sign out and force a clear error.
+    console.error('No profile found for user', id, error);
+    await supabase.auth.signOut();
+    setUser(null);
+    return;
   }
+
+  setUser({ id, email, name: profile.full_name ?? email, role: profile.role as Role });
+}
 
   async function login(email: string, password: string) {
     if (isSupabaseConfigured) {
